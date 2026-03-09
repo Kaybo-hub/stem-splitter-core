@@ -90,11 +90,16 @@ fn get_execution_providers() -> Vec<ExecutionProviderDispatch> {
 
 #[cfg(not(feature = "engine-mock"))]
 fn commit_cpu_session(model_path: &std::path::Path, num_threads: usize) -> Result<Session> {
-    Ok(SessionBuilder::new()?
-        .with_optimization_level(GraphOptimizationLevel::Level3)?
-        .with_intra_threads(num_threads)?
-        .with_inter_threads(num_threads)?
-        .with_parallel_execution(true)?
+    Ok(SessionBuilder::new()
+        .map_err(|e| anyhow::anyhow!("{}", e))?
+        .with_optimization_level(GraphOptimizationLevel::Level3)
+        .map_err(|e| anyhow::anyhow!("{}", e))?
+        .with_intra_threads(num_threads)
+        .map_err(|e| anyhow::anyhow!("{}", e))?
+        .with_inter_threads(num_threads)
+        .map_err(|e| anyhow::anyhow!("{}", e))?
+        .with_parallel_execution(true)
+        .map_err(|e| anyhow::anyhow!("{}", e))?
         .commit_from_file(model_path)?)
 }
 
@@ -119,10 +124,14 @@ fn commit_session_sequential_eps(
     }
 
     for (idx, ep) in providers.into_iter().enumerate() {
-        let builder_res = SessionBuilder::new()?
-            .with_optimization_level(GraphOptimizationLevel::Level3)?
-            .with_intra_threads(num_threads)?
-            .with_inter_threads(num_threads)?
+        let builder_res = SessionBuilder::new()
+            .map_err(|e| anyhow::anyhow!("{}", e))?
+            .with_optimization_level(GraphOptimizationLevel::Level3)
+            .map_err(|e| anyhow::anyhow!("{}", e))?
+            .with_intra_threads(num_threads)
+            .map_err(|e| anyhow::anyhow!("{}", e))?
+            .with_inter_threads(num_threads)
+            .map_err(|e| anyhow::anyhow!("{}", e))?
             .with_execution_providers(vec![ep]);
 
         let builder = match builder_res {
@@ -161,7 +170,7 @@ fn commit_session_sequential_eps(
 #[cfg(not(feature = "engine-mock"))]
 pub fn preload(h: &ModelHandle) -> Result<()> {
     ORT_INIT.get_or_try_init::<_, StemError>(|| {
-        ort::init().commit().map_err(StemError::from)?;
+        ort::init().commit();
         Ok(())
     })?;
 
@@ -251,17 +260,17 @@ pub fn run_window_demucs(left: &[f32], right: &[f32]) -> Result<Array3<f32>> {
 
     // Get input names
     let in_time = session
-        .inputs
+        .inputs()
         .iter()
-        .find(|i| i.name == "input")
-        .map(|i| i.name.clone())
+        .find(|i| i.name() == "input")
+        .map(|i| i.name().to_owned())
         .ok_or_else(|| anyhow!("Model missing input 'input'"))?;
 
     let in_spec = session
-        .inputs
+        .inputs()
         .iter()
-        .find(|i| i.name == "x")
-        .map(|i| i.name.clone())
+        .find(|i| i.name() == "x")
+        .map(|i| i.name().to_owned())
         .ok_or_else(|| anyhow!("Model missing input 'x'"))?;
 
     // Run inference
