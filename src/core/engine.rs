@@ -134,7 +134,7 @@ fn commit_session_sequential_eps(
             .map_err(|e| anyhow::anyhow!("{}", e))?
             .with_execution_providers(vec![ep]);
 
-        let builder = match builder_res {
+        let mut builder = match builder_res {
             Ok(b) => b,
             Err(e) => {
                 if std::env::var("DEBUG_STEMS").is_ok() {
